@@ -1,51 +1,80 @@
-package com.example.ftpsample;
+package com.example.sampleapp;
 
+import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
-import androidx.appcompat.app.AppCompatActivity;
-import com.example.ftp.FtpHybridServer;
-import java.io.File;
 
-/**
- * Minimal sample activity that starts/stops the hybrid server.
- * WARNING: This is a simple example; proper permission checks are required.
- */
-public class MainActivity extends AppCompatActivity {
-    private FtpHybridServer server;
+import com.example.ftpengine.filesystem.saf.SAFFileSystem;
+import com.example.ftphybrid.FtpEngineHybrid;
+import com.example.ftphybrid.AndroidUtils;
+
+public class MainActivity extends Activity {
+
+    private static final int REQUEST_CODE_OPEN_TREE = 1001;
+
+    private SAFFileSystem safFs;
+    private FtpEngineHybrid ftpEngine;
+    private LogUtils logger;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
-        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
-        Button startBtn = new Button(this);
-        startBtn.setText("Start FTP Server (2121)");
-        Button stopBtn = new Button(this);
-        stopBtn.setText("Stop FTP Server");
+        setContentView(R.layout.activity_main);
 
-        layout.addView(startBtn);
-        layout.addView(stopBtn);
-        setContentView(layout);
+        TextView txtLog = findViewById(R.id.txtLog);
+        logger = new LogUtils(txtLog);
 
-        startBtn.setOnClickListener(v -> {
+        Button btnChooseFolder = findViewById(R.id.btnChooseFolder);
+        Button btnStart = findViewById(R.id.btnStartServer);
+        Button btnStop = findViewById(R.id.btnStopServer);
+
+        btnChooseFolder.setOnClickListener(v -> {
+            Intent intent = AndroidUtils.requestSAFRootFolder();
+            startActivityForResult(intent, REQUEST_CODE_OPEN_TREE);
+        });
+
+        btnStart.setOnClickListener(v -> {
+            if (safFs == null) {
+                Toast.makeText(this, "Please choose a folder first", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (ftpEngine != null) {
+                Toast.makeText(this, "FTP Server already running", Toast.LENGTH_SHORT).show();
+                return;
+            }
             try {
-                File root = Environment.getExternalStorageDirectory();
-                server = new FtpHybridServer(root, 2121);
-                server.start();
-                Toast.makeText(this, "Server started on port 2121", Toast.LENGTH_LONG).show();
+                ftpEngine = new FtpEngineHybrid(this, safFs);
+                ftpEngine.start(2121);
+                logger.log("FTP Server started on port 2121");
             } catch (Exception e) {
-                Toast.makeText(this, "Error starting server: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                e.printStackTrace();
+                logger.log("Error starting FTP Server: " + e.getMessage());
             }
         });
 
-        stopBtn.setOnClickListener(v -> {
-            if (server != null) {
-                server.stop();
-                Toast.makeText(this, "Server stopped", Toast.LENGTH_SHORT).show();
+        btnStop.setOnClickListener(v -> {
+            if (ftpEngine != null) {
+                ftpEngine.stop();
+                ftpEngine = null;
+                logger.log("FTP Server stopped");
             }
         });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_CODE_OPEN_TREE && resultCode == RESULT_OK && data != null) {
+            Uri treeUri = data.getData();
+            if (treeUri != null) {
+                AndroidUtils.takePersistablePermission(this, treeUri);
+                safFs = new SAFFileSystem(this, treeUri);
+                logger.log("Selected folder: " + treeUri.getPath());
+            }
+        } else {
+            super.onActivityResult(requestCode, resultCode, data);
+        }
     }
 }
