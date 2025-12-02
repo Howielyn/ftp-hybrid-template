@@ -1,0 +1,11 @@
+// Root project settings for sample-app
+
+rootProject.name = "SampleApp"
+
+include ':app'
+include ':ftp-engine-core'
+include ':ftp-hybrid-server'
+
+// Optional: define module directories if they are outside the default folder structure
+// project(':ftp-engine-core').projectDir = new File('../ftp-engine-core')
+// project(':ftp-hybrid-server').projectDir = new File('../ftp-hybrid-server')
