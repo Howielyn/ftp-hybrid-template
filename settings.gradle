@@ -1,2 +1,15 @@
+// Root-level settings.gradle
+
 rootProject.name = "ftp-hybrid-template"
-include ":mina-android-patched", ":swiftp-core", ":ftp-hybrid-server", ":sample-app"
+
+// Include all modules
+include ":mina-android-patched"
+include ":ftp-engine-core"       // Replaced swiftp-core with Apache 2.0 core
+include ":ftp-hybrid-server"
+include ":sample-app"
+
+// Optional: if module directories are outside default locations
+// project(":mina-android-patched").projectDir = new File("../mina-android-patched")
+// project(":ftp-engine-core").projectDir = new File("../ftp-engine-core")
+// project(":ftp-hybrid-server").projectDir = new File("../ftp-hybrid-server")
+// project(":sample-app").projectDir = new File("../sample-app")
