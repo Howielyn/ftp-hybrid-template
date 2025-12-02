@@ -8,17 +8,7 @@ This repository is a **starter GitHub template** for an Android-compatible hybri
 
 > ⚠️ This is a template scaffold. It contains simplified/shim implementations (mina-shim) so you can build and experiment locally. Replace `mina-shim` with the real MINA dependency or your Android-patched MINA jar/aar when ready.
 
-## Project layout
 
-```
-/
-|- mina-shim/               # Small interface stubs for MINA types (replace with real MINA)
-|- swiftp-core/            # Simplified Swiftp-inspired FTP engine (Android-friendly)
-|- ftp-hybrid-server/      # Glue: MINA IoHandler connecting to Swiftp command processor
-|- sample-app/             # Minimal Android app demonstrating starting the server (Service)
-|- README.md
-|- LICENSE
-```
 
 ## How to use
 
@@ -35,11 +25,3 @@ This repository is a **starter GitHub template** for an Android-compatible hybri
 - This template intentionally avoids complex MINA internals and SSL/FTPS. Add SSL support carefully for Android.
 - See `ftp-hybrid-server/src/main/java/.../FtpHybridServer.java` for the precise glue code.
 
-## Next steps I can help with
-
-- Replace `mina-shim` with a patched MINA core suitable for Android.
-- Flesh out Swiftp command set with full RFC-compliant handling.
-- Add Passive mode data connection using MINA or java.net sockets.
-- Create a ready-to-publish AAR artifact for the hybrid server.
-
-Happy hacking! 🚀
