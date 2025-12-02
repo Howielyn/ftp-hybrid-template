@@ -1,61 +1,54 @@
-package com.example.ftpengine;
+package com.example.ftpengine.filesystem.saf;
 
-import java.io.*;
+import android.content.Context;
+import android.net.Uri;
+
+import java.io.IOException;
+import java.util.List;
 
 /**
- * Basic filesystem adapter. Replace direct File usage with SAF for Android 11+.
+ * SAF-backed FTP FileSystem.
+ *
+ * Ensures the FTP server operates inside a user-approved SAF directory.
+ * On Android 11+ this is the only legal way to write external storage.
+ *
+ * License: Apache 2.0
  */
-public class FtpFileSystem {
-    private final File root;
+public class SAFFileSystem {
 
-    public FtpFileSystem(File root) {
-        this.root = root;
-        if (!root.exists()) root.mkdirs();
+    private final Context context;
+    private final Uri rootUri;
+
+    public SAFFileSystem(Context context, Uri rootUri) {
+        this.context = context.getApplicationContext();
+        this.rootUri = rootUri;
     }
 
-    public String[] list(String path) {
-        File f = resolveFile(path);
-        String[] list = f.list();
-        return list != null ? list : new String[0];
+    public SAFFileObject getFile(String path) {
+        return new SAFFileObject(context, rootUri, path);
     }
 
-    public boolean isDirectory(String path) {
-        File f = resolveFile(path);
-        return f.exists() && f.isDirectory();
+    public List<SAFFileObject> listFiles(String path) throws IOException {
+        return getFile(path).list();
     }
 
     public boolean exists(String path) {
-        File f = resolveFile(path);
-        return f.exists();
+        return getFile(path).exists();
     }
 
-    public InputStream readFile(String path) throws FileNotFoundException {
-        return new FileInputStream(resolveFile(path));
+    public boolean delete(String path) throws IOException {
+        return getFile(path).delete();
     }
 
-    public OutputStream writeFile(String path) throws FileNotFoundException {
-        File f = resolveFile(path);
-        File parent = f.getParentFile();
-        if (parent != null && !parent.exists()) parent.mkdirs();
-        return new FileOutputStream(f);
+    public boolean mkdir(String path) throws IOException {
+        return getFile(path).mkdir();
     }
 
-    public boolean delete(String path) {
-        return resolveFile(path).delete();
+    public boolean rename(String from, String to) throws IOException {
+        return getFile(from).renameTo(to);
     }
 
-    public boolean mkdir(String path) {
-        return resolveFile(path).mkdirs();
-    }
-
-    public File resolve(String path) {
-        return resolveFile(path);
-    }
-
-    private File resolveFile(String path) {
-        String p = path == null ? "/" : path;
-        if (p.startsWith("/")) p = p.substring(1);
-        if (p.isEmpty()) return root;
-        return new File(root, p);
+    public SAFFileObject getRoot() {
+        return new SAFFileObject(context, rootUri, "/");
     }
 }
