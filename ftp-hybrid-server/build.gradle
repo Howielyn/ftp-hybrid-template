@@ -1,6 +1,19 @@
-apply plugin: 'java-library'
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 34
+
+    defaultConfig {
+        minSdkVersion 24
+        targetSdkVersion 34
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
 
 dependencies {
-    implementation project(':mina-android-patched')
-    implementation project(':swiftp-core')
+    implementation project(":ftp-engine-core")
 }
