@@ -1,46 +1,52 @@
-package com.example.swiftp;
+package com.example.ftpengine;
 
+import org.apache.mina.core.service.NioSocketAcceptor;
 import java.io.File;
-import java.io.IOException;
+import java.net.InetSocketAddress;
 
 /**
- * Simplified Android file system adapter.
- * Replace File usages with SAF (Storage Access Framework) calls in production.
+ * FtpEngine: starts and stops the FTP service using the patched MINA acceptor.
+ *
+ * Usage:
+ *   FtpEngine engine = new FtpEngine(new File("/sdcard/ftproot"), 2121);
+ *   engine.start(); // starts listener
+ *   engine.stop();
+ *
+ * Note: ensure your acceptor implementation (mina-android-patched) invokes the
+ * FtpCommandProcessor when it receives command lines.
  */
-public class AndroidFileSystem {
-    private final File root;
+public class FtpEngine {
+    private final File rootDir;
+    private final int port;
+    private NioSocketAcceptor acceptor;
+    private final FtpCommandProcessor processor;
 
-    public AndroidFileSystem(File root) {
-        this.root = root;
+    public FtpEngine(File rootDir, int port) {
+        this.rootDir = rootDir;
+        this.port = port;
+        this.processor = new FtpCommandProcessor(new FtpFileSystem(rootDir), new FtpUserManager());
     }
 
-    public boolean isDirectory(String path) {
-        File f = new File(root, path);
-        return f.isDirectory();
+    /**
+     * Start listening. This uses the mina-android-patched NioSocketAcceptor which
+     * expects an IoHandler that delegates to the command processor.
+     */
+    public void start() throws Exception {
+        acceptor = new NioSocketAcceptor();
+        // The IoHandler implementation (in ftp-hybrid-server) should call:
+        //    processor.handleCommand(session, line)
+        // We just expose the processor getter so that glue code can use it.
+        acceptor.setHandler(new com.example.ftp.handler.FtpIoHandlerAndroid(processor));
+        acceptor.bind(new InetSocketAddress(port));
+        System.out.println("FtpEngine started on port " + port);
     }
 
-    public String[] list(String path) {
-        File f = new File(root, path);
-        String[] list = f.list();
-        return list == null ? new String[0] : list;
+    public void stop() {
+        if (acceptor != null) acceptor.dispose();
+        System.out.println("FtpEngine stopped");
     }
 
-    public long getSize(String path) {
-        File f = new File(root, path);
-        return f.exists() ? f.length() : 0;
-    }
-
-    public boolean delete(String path) {
-        File f = new File(root, path);
-        return f.delete();
-    }
-
-    public void ensureDir(String path) {
-        File f = new File(root, path);
-        if (!f.exists()) f.mkdirs();
-    }
-
-    public File resolve(String path) {
-        return new File(root, path);
+    public FtpCommandProcessor getProcessor() {
+        return processor;
     }
 }
