@@ -1,49 +1,21 @@
-FTP Hybrid Server - MINA + FTP Engine Core (Template)
+# FTP Hybrid Server Template (MINA + FTP Engine Core)
 
-This repository is a starter GitHub template for an Android-compatible hybrid FTP server that combines:
+This is a **starter template** for an Android-compatible hybrid FTP server:
 
-MINA (networking layer) — intended to be used via an external dependency or replaced with a real MINA artifact
+- **MINA**: networking layer (replace `mina-shim` with real MINA for production)  
+- **FTP Engine Core**: Apache 2.0–friendly FTP engine (filesystem, commands, SAF, user management)  
+- **Glue module**: connects MINA networking to FTP Engine Core commands  
 
-FTP Engine Core (Apache 2.0–friendly Android FTP engine: filesystem, commands, SAF/perms, user management)
+## Usage
 
-Glue module that wires MINA networking to FTP Engine Core command processing
+1. Clone this repository.  
+2. Replace `mina-shim` with a real MINA dependency or Android-patched MINA JAR/AAR.  
+3. Customize `FTP Engine Core` classes (`FtpFileSystem`, `FtpCommandProcessor`, `FtpUserManager`) for your needs.  
+4. Build `sample-app` in Android Studio and run on a device or emulator.  
+5. Start the FTP service to accept connections (default port: 2121).  
 
+## Notes
 
-> ⚠️ This is a template scaffold. It contains simplified/shim implementations (mina-shim) so you can build and experiment locally. Replace mina-shim with the real MINA dependency or your Android-patched MINA jar/aar when ready.
-
-
-
-
----
-
-How to use
-
-1. Clone this repo to your machine.
-
-
-2. Replace mina-shim module with a real MINA dependency (or produce an Android-compatible MINA AAR/JAR and add it as a module or dependency).
-
-You can keep the same class names for easy swap.
-
-
-
-3. Implement or refine the FTP Engine Core classes (FtpFileSystem, FtpCommandProcessor, FtpUserManager) to match your needs (SAF / external storage).
-
-
-4. Build the sample-app with Android Studio and run on device/emulator (note: real external storage access requires proper Android permissions).
-
-
-5. Start the FTP service from the sample app to accept FTP connections.
-
-
-
-
----
-
-Quick notes
-
-The sample FtpEngineHybrid starts the hybrid server bound to port 2121 by default.
-
-This template intentionally avoids complex MINA internals and SSL/FTPS. Add SSL support carefully for Android.
-
-See ftp-hybrid-server/src/main/java/com/example/ftphybrid/FtpEngineHybrid.java for the precise glue code.
+- This is a template scaffold with simplified implementations.  
+- SSL/FTPS is **not included** — add carefully if needed.  
+- Ensure proper Android permissions for storage access.
