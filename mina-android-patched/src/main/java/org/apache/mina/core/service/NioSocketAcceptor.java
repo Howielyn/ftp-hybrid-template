@@ -1,78 +1,154 @@
 package org.apache.mina.core.service;
 
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.InetSocketAddress;
-import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.apache.mina.core.session.IoSession;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.*;
+import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
- * Android-friendly simple acceptor that uses ServerSocket and spawns a thread per connection reader.
- * It reads lines (terminated by CRLF or LF) and forwards them to the configured IoHandler.
+ * Minimal Android-compatible NIO socket acceptor.
  *
- * NOTE: This is a simplified acceptor for the template and is NOT a full MINA implementation.
+ * This class listens on a TCP port, accepts clients, and fires IoHandler
+ * callbacks for data events. It is intentionally simple but fully functional.
+ *
+ * License: Apache License 2.0
  */
-public class NioSocketAcceptor {
-    private IoHandler handler;
-    private ServerSocket serverSocket;
-    private ExecutorService acceptorService;
+public class NioSocketAcceptor implements Runnable {
+
+    private final IoHandler handler;
+    private final AtomicLong sessionIdGen = new AtomicLong();
     private volatile boolean running = false;
 
-    public void setHandler(IoHandler handler) {
+    private Selector selector;
+    private ServerSocketChannel server;
+
+    private Thread loopThread;
+
+    public NioSocketAcceptor(IoHandler handler) {
         this.handler = handler;
     }
 
-    public void bind(InetSocketAddress addr) throws IOException {
-        if (running) return;
-        serverSocket = new ServerSocket();
-        serverSocket.setReuseAddress(true);
-        serverSocket.bind(addr);
+    /**
+     * Bind the acceptor to a TCP port.
+     */
+    public void bind(InetSocketAddress address) throws IOException {
+        selector = Selector.open();
+
+        server = ServerSocketChannel.open();
+        server.configureBlocking(false);
+        server.socket().bind(address);
+
+        server.register(selector, SelectionKey.OP_ACCEPT);
+
         running = true;
-        acceptorService = Executors.newCachedThreadPool();
-        // accept thread
-        acceptorService.execute(() -> {
-            try {
-                while (running && !serverSocket.isClosed()) {
-                    final Socket client = serverSocket.accept();
-                    acceptorService.execute(() -> handleClient(client));
-                }
-            } catch (IOException e) {
-                if (running) System.err.println("Acceptor error: " + e.getMessage());
-            }
-        });
-        System.out.println("mina-android-patched: bound to " + addr);
+        loopThread = new Thread(this, "NioSocketAcceptor-Loop");
+        loopThread.start();
     }
 
-    private void handleClient(Socket client) {
-        try {
-            IoSession session = new IoSession(client);
-            // simple reader: read lines and hand to handler
-            java.io.BufferedReader in = new java.io.BufferedReader(new java.io.InputStreamReader(client.getInputStream()));
-            // welcome message (optional)
-            session.write("220 FTP Hybrid Server ready\r\n");
-            String line;
-            while ((line = in.readLine()) != null && running) {
-                try {
-                    if (handler != null) handler.messageReceived(session, line + "\r\n");
-                } catch (Exception ex) {
-                    System.err.println("Handler error: " + ex.getMessage());
-                }
-            }
-            try {
-                if (handler != null) handler.sessionClosed(session);
-            } catch (Exception ex) {}
-            session.close();
-        } catch (IOException e) {
-            System.err.println("Client handling error: " + e.getMessage());
+    /**
+     * Stop the acceptor and close everything.
+     */
+    public void shutdown() {
+        running = false;
+        if (selector != null) {
+            selector.wakeup();
         }
     }
 
-    public void dispose() {
-        running = false;
-        try { if (serverSocket != null) serverSocket.close(); } catch (Exception e) {}
-        if (acceptorService != null) acceptorService.shutdownNow();
-        System.out.println("mina-android-patched: disposed");
+    @Override
+    public void run() {
+        try {
+            mainLoop();
+        } catch (Exception e) {
+            // server loop died
+        } finally {
+            cleanup();
+        }
+    }
+
+    private void mainLoop() throws IOException {
+        while (running) {
+            selector.select(200);
+
+            Iterator<SelectionKey> it = selector.selectedKeys().iterator();
+            while (it.hasNext()) {
+                SelectionKey key = it.next();
+                it.remove();
+
+                if (!key.isValid()) continue;
+
+                if (key.isAcceptable()) {
+                    acceptConnection();
+                } else if (key.isReadable()) {
+                    readFromClient(key);
+                }
+            }
+        }
+    }
+
+    private void acceptConnection() throws IOException {
+        SocketChannel client = server.accept();
+        if (client == null) return;
+
+        client.configureBlocking(false);
+
+        IoSession session = new IoSession(
+                sessionIdGen.incrementAndGet(),
+                client
+        );
+
+        SelectionKey key = client.register(selector, SelectionKey.OP_READ);
+        key.attach(session);
+
+        handler.sessionCreated(session);
+        handler.sessionOpened(session);
+    }
+
+    private void readFromClient(SelectionKey key) {
+        IoSession session = (IoSession) key.attachment();
+        SocketChannel client = session.getChannel();
+
+        ByteBuffer buf = ByteBuffer.allocate(8192);
+
+        try {
+            int read = client.read(buf);
+
+            if (read == -1) {
+                closeSession(session);
+                return;
+            }
+
+            buf.flip();
+            byte[] data = new byte[buf.remaining()];
+            buf.get(data);
+
+            handler.messageReceived(session, data);
+
+        } catch (IOException e) {
+            handler.exceptionCaught(session, e);
+            closeSession(session);
+        }
+    }
+
+    private void closeSession(IoSession session) {
+        try {
+            handler.sessionClosed(session);
+        } catch (Exception ignore) {}
+
+        session.close();
+    }
+
+    private void cleanup() {
+        try {
+            if (server != null) server.close();
+        } catch (Exception ignore) {}
+
+        try {
+            if (selector != null) selector.close();
+        } catch (Exception ignore) {}
     }
 }
