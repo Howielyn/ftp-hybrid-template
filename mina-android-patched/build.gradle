@@ -1,5 +1,27 @@
+// MINA Android Patched Module
+// Clean, dependency-free Java library compatible with Android
+
 apply plugin: 'java-library'
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+    withJavadocJar()
+    withSourcesJar()
+}
+
 dependencies {
-    // No external dependencies. This is a small Android-friendly acceptor implementation.
+    // No external dependencies.
+    // This module contains a minimal patched version of MINA 
+    // (NioSocketAcceptor, IoSession, IoHandler) so Android can run it.
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
+
+tasks.withType(Jar) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archiveBaseName.set("mina-android-patched")
+    archiveVersion.set("1.0.0")
 }
