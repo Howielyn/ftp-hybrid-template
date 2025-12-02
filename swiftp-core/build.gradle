@@ -1,0 +1,5 @@
+apply plugin: 'java-library'
+
+dependencies {
+    // Add Android-specific dependencies when integrating into an Android project (e.g., use as an Android library)
+}

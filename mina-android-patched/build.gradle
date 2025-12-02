@@ -1,0 +1,5 @@
+apply plugin: 'java-library'
+
+dependencies {
+    // No external dependencies. This is a small Android-friendly acceptor implementation.
+}
