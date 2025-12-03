@@ -38,8 +38,11 @@ public class FtpIoHandlerAndroid implements IoHandler {
     }
 
     @Override
-    public void sessionClosed(IoSession session) {
-        FtpSessionContext ctx = (FtpSessionContext) session.getAttribute("ftpCtx");
-        if (ctx != null) ctx.reset();
+public void sessionOpened(IoSession session) {
+    try {
+        session.write("220 Android FTP Server Ready\r\n".getBytes());
+    } catch (IOException e) {
+        e.printStackTrace();
+        session.close();
     }
 }
