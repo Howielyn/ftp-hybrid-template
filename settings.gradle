@@ -2,42 +2,37 @@
 
 rootProject.name = "ftp-hybrid-template"
 
-// Enable Gradle 8+ feature preview (optional but recommended)
+// Recommended for Gradle 8+ projects
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 // ---------------------------------------------------------------------
 // Module Includes
 // ---------------------------------------------------------------------
-
 include(":mina-android-patched")
-include(":ftp-engine-core")      // Replaces swiftp-core with Apache 2.0 version
+include(":ftp-engine-core")
 include(":ftp-hybrid-server")
 include(":sample-app")
 
 // ---------------------------------------------------------------------
-// Explicit project directory mapping (optional but recommended)
-//
-// Use this only if your folder names differ or the repo is nested.
-// Otherwise, Gradle auto-detects them correctly.
+// Plugin Management (AGP 8+ requires plugin versions here)
 // ---------------------------------------------------------------------
-
-// project(":mina-android-patched").projectDir = file("mina-android-patched")
-// project(":ftp-engine-core").projectDir = file("ftp-engine-core")
-// project(":ftp-hybrid-server").projectDir = file("ftp-hybrid-server")
-// project(":sample-app").projectDir = file("sample-app")
-
-// ---------------------------------------------------------------------
-// Default repositories for plugin resolution (required for AGP 8)
-// ---------------------------------------------------------------------
-
 pluginManagement {
     repositories {
         google()
         mavenCentral()
         gradlePluginPortal()
     }
+
+    plugins {
+        id("com.android.application") version "8.5.0"
+        id("com.android.library") version "8.5.0"
+        id("org.jetbrains.kotlin.android") version "1.9.22" apply false  // optional
+    }
 }
 
+// ---------------------------------------------------------------------
+// Dependency Repositories
+// ---------------------------------------------------------------------
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
