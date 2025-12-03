@@ -18,6 +18,6 @@ android {
 }
 
 dependencies {
-    // no extra dependencies needed, core is already here
-} 'org.apache.mina:mina-core:2.2.1'
+    // Only core MINA, we are including FTP server code manually
+    implementation 'org.apache.mina:mina-core:2.2.1'
 }
