@@ -2,17 +2,13 @@ package com.example.ftpengine;
 
 import org.apache.mina.core.session.IoSession;
 
-import java.io.*;
-import java.net.InetAddress;
+import java.io.File;
+import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Locale;
 
 /**
- * Processes FTP control commands.
- *
- * This class is intentionally synchronous and straightforward.
- *
- * The IoHandler should call processor.handleCommand(session, line)
- * where 'line' is a full command line including CRLF.
+ * Clean-room minimal FTP command processor for Android.
  */
 public class FtpCommandProcessor {
 
@@ -24,283 +20,201 @@ public class FtpCommandProcessor {
         this.users = users;
     }
 
-    /**
-     * Handle a raw command line from the control connection.
-     *
-     * @param line    The ASCII command line (may include CR/LF).
-     * @param session The IoSession (control connection wrapper).
-     */
-    public void handleCommand(String line, IoSession session) {
+    private void reply(IoSession session, String msg) {
+        session.write((msg + "\r\n").getBytes());
+    }
+
+    public void handle(IoSession session, FtpSessionContext ctx, String line) {
         if (line == null) return;
-        String trimmed = line.trim();
-        if (trimmed.isEmpty()) return;
+        String[] parts = line.split(" ", 2);
 
-        String[] parts = trimmed.split(" ", 2);
-        String cmd = parts[0].toUpperCase();
-        String arg = parts.length > 1 ? parts[1] : null;
+        String cmd = parts[0].toUpperCase(Locale.ROOT);
+        String arg = (parts.length > 1 ? parts[1] : null);
 
-        try {
-            switch (cmd) {
-                case "NOOP":
-                    session.write("200 NOOP ok\r\n");
-                    break;
+        switch (cmd) {
+            case "USER":
+                ctx.username = arg;
+                reply(session, "331 User name okay, need password");
+                break;
 
-                case "USER":
-                    session.setAttribute("ftp.user", arg != null ? arg : "");
-                    session.write("331 User name okay, need password\r\n");
-                    break;
+            case "PASS":
+                if (users.authenticate(ctx.username, arg)) {
+                    ctx.loggedIn = true;
+                    reply(session, "230 User logged in, proceed");
+                } else {
+                    reply(session, "530 Not logged in");
+                }
+                break;
 
-                case "PASS":
-                    String username = (String) session.getAttribute("ftp.user");
-                    if (username == null) username = "";
-                    boolean ok = users.authenticate(username, arg != null ? arg : "");
-                    if (ok) {
-                        session.setAttribute("ftp.auth", true);
-                        session.write("230 User logged in, proceed\r\n");
-                        // set user's home dir as current dir
-                        session.setAttribute("ftp.pwd", users.getHomeDir(username));
+            case "PWD":
+                reply(session, "257 \"" + ctx.cwd + "\" is current directory");
+                break;
+
+            case "CWD":
+                if (arg == null) {
+                    reply(session, "501 Missing directory");
+                } else {
+                    File tryDir = new File(fs.resolve(ctx.cwd + "/" + arg).getPath());
+                    if (tryDir.exists() && tryDir.isDirectory()) {
+                        ctx.cwd = normalize("/" + arg);
+                        reply(session, "250 Directory changed");
                     } else {
-                        session.write("530 Not logged in\r\n");
+                        reply(session, "550 Failed to change directory");
                     }
-                    break;
+                }
+                break;
 
-                case "PWD":
-                    String cwd = getCwd(session);
-                    session.write("257 \"" + cwd + "\" is current directory\r\n");
-                    break;
+            case "TYPE":
+                ctx.transferType = arg;
+                reply(session, "200 Type set");
+                break;
 
-                case "CWD":
-                    if (arg == null) {
-                        session.write("501 Syntax error in parameters or arguments\r\n");
-                    } else {
-                        String target = FtpUtils.resolvePath(getCwd(session), arg);
-                        if (fs.isDirectory(target)) {
-                            session.setAttribute("ftp.pwd", target);
-                            session.write("250 Directory successfully changed.\r\n");
-                        } else {
-                            session.write("550 Failed to change directory.\r\n");
-                        }
-                    }
-                    break;
+            case "PORT":
+                handlePort(session, ctx, arg);
+                break;
 
-                case "TYPE":
-                    if ("I".equalsIgnoreCase(arg)) {
-                        session.setAttribute("ftp.type", "I");
-                        session.write("200 Type set to I.\r\n");
-                    } else {
-                        session.setAttribute("ftp.type", "A");
-                        session.write("200 Type set to A.\r\n");
-                    }
-                    break;
+            case "PASV":
+                handlePasv(session, ctx);
+                break;
 
-                case "PASV":
-                    startPassive(session);
-                    break;
+            case "LIST":
+                handleList(session, ctx);
+                break;
 
-                case "PORT":
-                    if (arg == null) {
-                        session.write("501 Syntax error in parameters or arguments\r\n");
-                    } else {
-                        boolean connected = setupActive(session, arg);
-                        if (connected) session.write("200 PORT command successful.\r\n");
-                        else session.write("425 Can't open data connection.\r\n");
-                    }
-                    break;
+            case "RETR":
+                handleRetr(session, ctx, arg);
+                break;
 
-                case "LIST":
-                    handleLIST(session, arg);
-                    break;
+            case "STOR":
+                handleStor(session, ctx, arg);
+                break;
 
-                case "RETR":
-                    handleRETR(session, arg);
-                    break;
+            case "QUIT":
+                reply(session, "221 Goodbye");
+                session.close();
+                break;
 
-                case "STOR":
-                    handleSTOR(session, arg);
-                    break;
-
-                case "QUIT":
-                    session.write("221 Goodbye\r\n");
-                    try { session.close(); } catch (Exception ignored) {}
-                    break;
-
-                default:
-                    session.write("502 Command not implemented\r\n");
-                    break;
-            }
-        } catch (Exception e) {
-            try { session.write("550 Internal server error\r\n"); } catch (Exception ignored) {}
+            default:
+                reply(session, "502 Command not implemented");
         }
     }
 
-    private String getCwd(IoSession session) {
-        Object o = session.getAttribute("ftp.pwd");
-        return o != null ? o.toString() : "/";
+    private String normalize(String p) {
+        if (p == null || p.isEmpty()) return "/";
+        if (!p.startsWith("/")) p = "/" + p;
+        return p.replace("//", "/");
     }
 
-    // --- LIST ---
-    private void handleLIST(IoSession session, String arg) {
-        try {
-            String path = arg != null ? FtpUtils.resolvePath(getCwd(session), arg) : getCwd(session);
-            session.write("150 Opening ASCII mode data connection for file list.\r\n");
-
-            Socket data = openDataConnection(session);
-            if (data == null) {
-                session.write("425 Can't open data connection.\r\n");
-                return;
-            }
-
-            PrintWriter out = new PrintWriter(new OutputStreamWriter(data.getOutputStream(), "UTF-8"), true);
-            String[] list = fs.list(path);
-            for (String entry : list) {
-                // simple listing; you may improve with permissions/timestamps/size
-                out.println(entry);
-            }
-            out.flush();
-            data.close();
-
-            session.write("226 Transfer complete.\r\n");
-        } catch (Exception e) {
-            try { session.write("426 Connection closed; transfer aborted.\r\n"); } catch (Exception ignored) {}
-        } finally {
-            cleanupDataConnection(session);
-        }
-    }
-
-    // --- RETR ---
-    private void handleRETR(IoSession session, String arg) {
-        if (arg == null) {
-            try { session.write("501 Missing filename\r\n"); } catch (Exception ignored) {}
-            return;
-        }
-        try {
-            String path = FtpUtils.resolvePath(getCwd(session), arg);
-            if (!fs.exists(path)) {
-                session.write("550 File not found\r\n");
-                return;
-            }
-            session.write("150 Opening binary mode data connection for file transfer.\r\n");
-            Socket data = openDataConnection(session);
-            if (data == null) {
-                session.write("425 Can't open data connection.\r\n");
-                return;
-            }
-
-            try (InputStream in = fs.readFile(path);
-                 OutputStream out = data.getOutputStream()) {
-                byte[] buf = new byte[8192];
-                int r;
-                while ((r = in.read(buf)) != -1) out.write(buf, 0, r);
-                out.flush();
-            }
-
-            data.close();
-            session.write("226 Transfer complete.\r\n");
-        } catch (Exception e) {
-            try { session.write("426 Transfer aborted.\r\n"); } catch (Exception ignored) {}
-        } finally {
-            cleanupDataConnection(session);
-        }
-    }
-
-    // --- STOR ---
-    private void handleSTOR(IoSession session, String arg) {
-        if (arg == null) {
-            try { session.write("501 Missing filename\r\n"); } catch (Exception ignored) {}
-            return;
-        }
-        try {
-            String path = FtpUtils.resolvePath(getCwd(session), arg);
-            session.write("150 Opening binary mode data connection for file upload.\r\n");
-
-            Socket data = openDataConnection(session);
-            if (data == null) {
-                session.write("425 Can't open data connection.\r\n");
-                return;
-            }
-
-            try (OutputStream out = fs.writeFile(path);
-                 InputStream in = data.getInputStream()) {
-                byte[] buf = new byte[8192];
-                int r;
-                while ((r = in.read(buf)) != -1) out.write(buf, 0, r);
-                out.flush();
-            }
-            data.close();
-            session.write("226 Transfer complete.\r\n");
-        } catch (Exception e) {
-            try { session.write("426 Transfer aborted.\r\n"); } catch (Exception ignored) {}
-        } finally {
-            cleanupDataConnection(session);
-        }
-    }
-
-    // --- Passive mode: open ServerSocket and store in session ---
-    private void startPassive(IoSession session) {
-        try {
-            FtpDataConnection dataConn = new FtpDataConnection();
-            dataConn.startPassive(0); // ephemeral
-            int port = dataConn.getLocalPort();
-            // save data connection
-            session.setAttribute("ftp.data", dataConn);
-
-            // prepare PASV response: convert local IP to comma format
-            String host = InetAddress.getLocalHost().getHostAddress(); // may return 127.0.0.1 on emulator
-            String[] parts = host.split("\\.");
-            int p1 = port / 256;
-            int p2 = port % 256;
-            String pasv = String.format("227 Entering Passive Mode (%s,%s,%s,%s,%d,%d)\r\n",
-                    parts[0], parts[1], parts[2], parts[3], p1, p2);
-            session.write(pasv);
-        } catch (Exception e) {
-            try { session.write("425 Can't open passive connection\r\n"); } catch (Exception ignored) {}
-        }
-    }
-
-    // --- Active mode (PORT): parse host, connect from server to client ---
-    private boolean setupActive(IoSession session, String arg) {
+    private void handlePort(IoSession session, FtpSessionContext ctx, String arg) {
         try {
             String[] nums = arg.split(",");
-            if (nums.length != 6) return false;
-            String host = String.join(".", nums[0], nums[1], nums[2], nums[3]);
-            int port = Integer.parseInt(nums[4]) * 256 + Integer.parseInt(nums[5]);
-
-            FtpDataConnection conn = new FtpDataConnection();
-            conn.connectActive(host, port);
-            session.setAttribute("ftp.data.active", conn);
-            return true;
+            ctx.dataHost = nums[0] + "." + nums[1] + "." + nums[2] + "." + nums[3];
+            ctx.dataPort = Integer.parseInt(nums[4]) * 256 + Integer.parseInt(nums[5]);
+            reply(session, "200 PORT command successful");
         } catch (Exception e) {
-            return false;
+            reply(session, "501 Syntax error");
         }
     }
 
-    // Open data connection (either passive accept or active socket)
-    private Socket openDataConnection(IoSession session) throws Exception {
-        // Active (server connects to client)
-        FtpDataConnection active = (FtpDataConnection) session.getAttribute("ftp.data.active");
-        if (active != null && active.isConnected()) {
-            return active.getSocket();
-        }
+    private void handlePasv(IoSession session, FtpSessionContext ctx) {
+        try {
+            ServerSocket ss = new ServerSocket(0); // random port
+            ctx.pasvPort = ss.getLocalPort();
+            ctx.passiveDataSocket = ss.accept();
 
-        // Passive: accept connection on server's pasv socket
-        FtpDataConnection pasv = (FtpDataConnection) session.getAttribute("ftp.data");
-        if (pasv != null) {
-            Socket s = pasv.accept();
-            return s;
-        }
+            int p1 = ctx.pasvPort / 256;
+            int p2 = ctx.pasvPort % 256;
 
-        // no data connection available
+            String response = "227 Entering Passive Mode (127,0,0,1," + p1 + "," + p2 + ")";
+            reply(session, response);
+        } catch (Exception e) {
+            reply(session, "425 Can't open passive connection");
+        }
+    }
+
+    private void handleList(IoSession session, FtpSessionContext ctx) {
+        try {
+            reply(session, "150 Opening data connection for LIST");
+
+            Socket data = openDataConnection(ctx);
+            if (data == null) {
+                reply(session, "425 Can't open data connection");
+                return;
+            }
+
+            String[] items = fs.list(ctx.cwd);
+            StringBuilder sb = new StringBuilder();
+            for (String f : items) sb.append(f).append("\r\n");
+
+            data.getOutputStream().write(sb.toString().getBytes());
+            data.close();
+
+            reply(session, "226 Transfer complete");
+        } catch (Exception e) {
+            reply(session, "426 Transfer aborted");
+        }
+    }
+
+    private void handleRetr(IoSession session, FtpSessionContext ctx, String filename) {
+        try {
+            if (filename == null) {
+                reply(session, "501 Missing filename");
+                return;
+            }
+
+            reply(session, "150 Opening data connection for RETR");
+
+            Socket data = openDataConnection(ctx);
+            if (data == null) {
+                reply(session, "425 Can't open data connection");
+                return;
+            }
+
+            byte[] fileData = fs.readFile(ctx.cwd + "/" + filename);
+            data.getOutputStream().write(fileData);
+            data.close();
+
+            reply(session, "226 Transfer complete");
+        } catch (Exception e) {
+            reply(session, "426 Transfer aborted");
+        }
+    }
+
+    private void handleStor(IoSession session, FtpSessionContext ctx, String filename) {
+        try {
+            if (filename == null) {
+                reply(session, "501 Missing filename");
+                return;
+            }
+
+            reply(session, "150 Opening data connection for STOR");
+
+            Socket data = openDataConnection(ctx);
+            if (data == null) {
+                reply(session, "425 Can't open data connection");
+                return;
+            }
+
+            byte[] buffer = data.getInputStream().readAllBytes();
+            fs.writeFile(ctx.cwd + "/" + filename, buffer);
+            data.close();
+
+            reply(session, "226 Transfer complete");
+        } catch (Exception e) {
+            reply(session, "426 Transfer aborted");
+        }
+    }
+
+    private Socket openDataConnection(FtpSessionContext ctx) {
+        try {
+            if (ctx.activeDataSocket != null) return ctx.activeDataSocket;
+            if (ctx.passiveDataSocket != null) return ctx.passiveDataSocket;
+
+            if (ctx.dataHost != null) {
+                return new Socket(ctx.dataHost, ctx.dataPort);
+            }
+        } catch (Exception ignored) {}
+
         return null;
-    }
-
-    private void cleanupDataConnection(IoSession session) {
-        try {
-            FtpDataConnection pasv = (FtpDataConnection) session.getAttribute("ftp.data");
-            if (pasv != null) { pasv.stop(); session.setAttribute("ftp.data", null); }
-        } catch (Exception ignored) {}
-        try {
-            FtpDataConnection active = (FtpDataConnection) session.getAttribute("ftp.data.active");
-            if (active != null) { active.stop(); session.setAttribute("ftp.data.active", null); }
-        } catch (Exception ignored) {}
     }
 }
