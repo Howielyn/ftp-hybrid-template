@@ -1,4 +1,4 @@
-package com.example.ftpengine.filesystem.saf;
+package com.example.ftpengine.saf;
 
 import android.content.ContentResolver;
 import android.content.Context;
