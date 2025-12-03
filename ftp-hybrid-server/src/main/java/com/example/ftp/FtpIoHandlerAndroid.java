@@ -1,6 +1,7 @@
 package com.example.ftp;
 
 import com.example.ftpengine.FtpCommandProcessor;
+import com.example.ftpengine.FtpSessionContext;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IoSession;
 
@@ -10,7 +11,7 @@ import java.nio.charset.StandardCharsets;
  * Android-compatible IoHandler for FTP control connection.
  *
  * Decodes incoming bytes into UTF-8 command lines and passes them to
- * FtpCommandProcessor. Handles exceptions gracefully.
+ * FtpCommandProcessor.
  */
 public class FtpIoHandlerAndroid implements IoHandler {
 
@@ -22,19 +23,24 @@ public class FtpIoHandlerAndroid implements IoHandler {
 
     @Override
     public void sessionCreated(IoSession session) {
-        // Optional: log new session
+        session.setAttribute("ftpCtx", new FtpSessionContext());
         System.out.println("Session created: " + session.getId());
     }
 
     @Override
     public void sessionOpened(IoSession session) {
-        // Optional: send welcome message
-        processor.sendReply(session, "220 Welcome to Android FTP Server");
+        FtpSessionContext ctx = (FtpSessionContext) session.getAttribute("ftpCtx");
+        try {
+            processor.handle(session, ctx, "220 Welcome to Android FTP Server");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void sessionClosed(IoSession session) {
-        // Optional: log session close
+        FtpSessionContext ctx = (FtpSessionContext) session.getAttribute("ftpCtx");
+        if (ctx != null) ctx.reset();
         System.out.println("Session closed: " + session.getId());
     }
 
@@ -43,31 +49,35 @@ public class FtpIoHandlerAndroid implements IoHandler {
         if (!(message instanceof byte[])) return;
 
         byte[] bytes = (byte[]) message;
+        FtpSessionContext ctx = (FtpSessionContext) session.getAttribute("ftpCtx");
+
         try {
             String line = new String(bytes, StandardCharsets.UTF_8);
             String[] commands = line.split("\r?\n");
+
             for (String cmdLine : commands) {
                 cmdLine = cmdLine.trim();
                 if (!cmdLine.isEmpty()) {
-                    processor.handleCommand(cmdLine, session);
+                    processor.handle(session, ctx, cmdLine);
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
+            try {
+                processor.handle(session, ctx, "500 Internal server error");
+            } catch (Exception ignored) {}
         }
     }
 
     @Override
-    public void messageSent(IoSession session, Object message) {
-        // Optional: log sent message
-        // System.out.println("Sent: " + message);
-    }
+    public void messageSent(IoSession session, Object message) {}
 
     @Override
     public void exceptionCaught(IoSession session, Throwable cause) {
         cause.printStackTrace();
+        FtpSessionContext ctx = (FtpSessionContext) session.getAttribute("ftpCtx");
         try {
-            processor.sendReply(session, "500 Internal server error");
-        } catch (Exception ignore) {}
+            processor.handle(session, ctx, "500 Internal server error");
+        } catch (Exception ignored) {}
     }
 }
