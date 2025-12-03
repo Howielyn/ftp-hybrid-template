@@ -1,6 +1,8 @@
 apply plugin: 'com.android.library'
 
 android {
+    namespace "com.example.ftphybridserver"   // ✅ REQUIRED BY AGP 8+
+
     compileSdkVersion 34
 
     defaultConfig {
@@ -21,4 +23,5 @@ android {
 
 dependencies {
     implementation project(":ftp-engine-core")
+    implementation project(":mina-android-patched")
 }
