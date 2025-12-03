@@ -1,5 +1,32 @@
-// Root project settings for ftp-hybrid-template (including sample-app)
+// ---------------------------------------------------------------------
+// Plugin management must be first
+// ---------------------------------------------------------------------
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
 
+    plugins {
+        id("com.android.application") version "8.5.0"
+        id("com.android.library") version "8.5.0"
+        // Kotlin plugin (optional)
+        id("org.jetbrains.kotlin.android") version "1.9.22" apply false
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+// ---------------------------------------------------------------------
+// Root project name and module includes
+// ---------------------------------------------------------------------
 rootProject.name = "ftp-hybrid-template"
 
 include(":mina-android-patched")
@@ -12,27 +39,3 @@ include(":sample-app")
 // project(":ftp-engine-core").projectDir = file("ftp-engine-core")
 // project(":ftp-hybrid-server").projectDir = file("ftp-hybrid-server")
 // project(":sample-app").projectDir = file("sample-app")
-
-// Plugin management for AGP 8+
-pluginManagement {
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-
-    plugins {
-        id("com.android.application") version "8.5.0"
-        id("com.android.library") version "8.5.0"
-        // Kotlin plugin optional
-        id("org.jetbrains.kotlin.android") version "1.9.22" apply false
-    }
-}
-
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
