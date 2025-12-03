@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace "org.apache.mina.ftpserver"
+    namespace "org.apache.mina"
     compileSdk 34
 
     defaultConfig {
@@ -15,13 +15,9 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-
-    kotlinOptions {
-        jvmTarget = "17"
-    }
 }
 
 dependencies {
-    // Only standard dependencies MINA needs
-    implementation 'org.apache.mina:mina-core:2.2.1'
+    // no extra dependencies needed, core is already here
+} 'org.apache.mina:mina-core:2.2.1'
 }
