@@ -1,15 +1,28 @@
-apply plugin: 'java-library'
+// ftp-engine-core/build.gradle
+plugins {
+    id 'com.android.library'
+}
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+android {
+    namespace "com.example.ftpengine"
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 24
+        targetSdk 34
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // If using Kotlin:
+    // kotlinOptions {
+    //     jvmTarget = "17"
+    // }
 }
 
 dependencies {
-    // No external dependencies
-}
-
-tasks.withType(JavaCompile) {
-    options.encoding = 'UTF-8'
-    options.release = 17   // Ensures proper JDK 17 targeting
+    implementation project(":mina-android-patched")
 }
