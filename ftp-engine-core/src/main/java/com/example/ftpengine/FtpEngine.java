@@ -1,6 +1,7 @@
 package com.example.ftpengine;
 
-import org.apache.mina.core.service.NioSocketAcceptor;
+import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
+import org.apache.mina.core.service.IoHandler;
 import java.net.InetSocketAddress;
 
 public class FtpEngine {
@@ -11,15 +12,12 @@ public class FtpEngine {
     public FtpEngine(IFtpFileSystem fs) {
         this.processor = new FtpCommandProcessor(fs, new FtpUserManager());
 
-        // Construct acceptor with no arguments
-        this.acceptor = new NioSocketAcceptor();
+        // MINA 1.x: NioSocketAcceptor constructor accepts IoHandler
+        IoHandler handler = new FtpIoHandlerAndroid(processor);
+        this.acceptor = new NioSocketAcceptor(handler);
 
-        // Assign handler separately
-        this.acceptor.setHandler(new FtpIoHandlerAndroid(processor));
-
-        // Optional: configure session buffer sizes
-        this.acceptor.getSessionConfig().setReadBufferSize(1024);
-        this.acceptor.getSessionConfig().setReceiveBufferSize(1024);
+        // Optional: set read buffer size
+        this.acceptor.getDefaultConfig().setReadBufferSize(1024);
     }
 
     public void start(int port) throws Exception {
@@ -29,7 +27,7 @@ public class FtpEngine {
 
     public void stop() {
         if (acceptor != null) {
-            acceptor.unbind();
+            acceptor.unbindAll(); // MINA 1.x method
             acceptor.dispose();
         }
         System.out.println("FtpEngine stopped");
