@@ -3,13 +3,10 @@ package com.example.ftpengine;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 
-/**
- * Minimal local filesystem bridge for the FTP engine.
- * Works on Android (uses java.io only, no NIO).
- */
-public class FtpFileSystem {
+public class FtpFileSystem implements IFtpFileSystem {
 
     private final File root;
 
@@ -23,7 +20,6 @@ public class FtpFileSystem {
         if (path.startsWith("/")) path = path.substring(1);
         File f = new File(root, path);
         try {
-            // prevent going outside of root folder
             String r = root.getCanonicalPath();
             String c = f.getCanonicalPath();
             if (!c.startsWith(r)) return root;
@@ -31,48 +27,41 @@ public class FtpFileSystem {
         return f;
     }
 
-    public boolean exists(String path) {
-        return resolve(path).exists();
-    }
+    @Override
+    public boolean exists(String path) { return resolve(path).exists(); }
 
-    public boolean isDirectory(String path) {
-        return resolve(path).isDirectory();
-    }
+    @Override
+    public boolean mkdir(String path) { return resolve(path).mkdirs(); }
 
-    public boolean mkdir(String path) {
-        return resolve(path).mkdirs();
-    }
+    @Override
+    public boolean delete(String path) { return resolve(path).delete(); }
 
-    public boolean delete(String path) {
-        File f = resolve(path);
-        return f.delete();
-    }
-
-    public boolean rename(String oldPath, String newPath) {
-        File o = resolve(oldPath);
-        File n = resolve(newPath);
+    @Override
+    public boolean rename(String from, String to) {
+        File o = resolve(from), n = resolve(to);
         return o.renameTo(n);
     }
 
+    @Override
     public String[] list(String path) {
-        File f = resolve(path);
-        String[] items = f.list();
+        String[] items = resolve(path).list();
         if (items == null) return new String[0];
         Arrays.sort(items);
         return items;
     }
 
-    public byte[] readFile(String path) throws Exception {
+    @Override
+    public byte[] readFile(String path) throws IOException {
         File f = resolve(path);
         FileInputStream in = new FileInputStream(f);
         byte[] data = new byte[(int) f.length()];
-        int r = in.read(data);
+        in.read(data);
         in.close();
-        if (r < 0) return new byte[0];
         return data;
     }
 
-    public void writeFile(String path, byte[] data) throws Exception {
+    @Override
+    public void writeFile(String path, byte[] data) throws IOException {
         File f = resolve(path);
         File parent = f.getParentFile();
         if (!parent.exists()) parent.mkdirs();
