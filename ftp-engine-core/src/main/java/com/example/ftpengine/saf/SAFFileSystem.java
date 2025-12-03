@@ -2,16 +2,14 @@ package com.example.ftpengine.saf;
 
 import android.content.Context;
 import android.net.Uri;
-import com.example.ftpengine.FtpFileSystem;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
 /**
  * SAF-backed FTP FileSystem.
  */
-public class SAFFileSystem implements FtpFileSystem {
+public class SAFFileSystem implements IFtpFileSystem {
 
     private final Context context;
     private final Uri rootUri;
@@ -19,11 +17,6 @@ public class SAFFileSystem implements FtpFileSystem {
     public SAFFileSystem(Context context, Uri rootUri) {
         this.context = context.getApplicationContext();
         this.rootUri = rootUri;
-    }
-
-    @Override
-    public File resolve(String path) throws IOException {
-        return getFile(path).toFile();
     }
 
     @Override
@@ -43,17 +36,22 @@ public class SAFFileSystem implements FtpFileSystem {
 
     @Override
     public boolean rename(String from, String to) throws IOException {
-        return getFile(from).renameTo(to);
+        return getFile(from).renameTo(getFile(to));
     }
 
     @Override
-    public List<File> list(String path) throws IOException {
-        return getFile(path).listFiles();
+    public List<String> list(String path) throws IOException {
+        return getFile(path).list();
     }
 
     @Override
-    public File getRoot() throws IOException {
-        return getFile("/");
+    public byte[] readFile(String path) throws IOException {
+        return getFile(path).read();
+    }
+
+    @Override
+    public void writeFile(String path, byte[] data) throws IOException {
+        getFile(path).write(data);
     }
 
     private SAFFileObject getFile(String path) {
