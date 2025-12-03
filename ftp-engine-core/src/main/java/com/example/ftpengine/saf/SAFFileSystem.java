@@ -2,13 +2,10 @@ package com.example.ftpengine.saf;
 
 import android.content.Context;
 import android.net.Uri;
+import com.example.ftpengine.IFtpFileSystem;
 
 import java.io.IOException;
-import java.util.List;
 
-/**
- * SAF-backed FTP FileSystem.
- */
 public class SAFFileSystem implements IFtpFileSystem {
 
     private final Context context;
@@ -25,33 +22,33 @@ public class SAFFileSystem implements IFtpFileSystem {
     }
 
     @Override
-    public boolean delete(String path) throws IOException {
-        return getFile(path).delete();
-    }
-
-    @Override
     public boolean mkdir(String path) throws IOException {
         return getFile(path).mkdir();
     }
 
     @Override
-    public boolean rename(String from, String to) throws IOException {
-        return getFile(from).renameTo(getFile(to));
+    public boolean delete(String path) throws IOException {
+        return getFile(path).delete();
     }
 
     @Override
-    public List<String> list(String path) throws IOException {
-        return getFile(path).list();
+    public boolean rename(String from, String to) throws IOException {
+        return getFile(from).renameTo(to);
+    }
+
+    @Override
+    public String[] list(String path) throws IOException {
+        return getFile(path).listNames();
     }
 
     @Override
     public byte[] readFile(String path) throws IOException {
-        return getFile(path).read();
+        return getFile(path).readBytes();
     }
 
     @Override
     public void writeFile(String path, byte[] data) throws IOException {
-        getFile(path).write(data);
+        getFile(path).writeBytes(data);
     }
 
     private SAFFileObject getFile(String path) {
