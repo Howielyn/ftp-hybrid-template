@@ -1,33 +1,31 @@
-// MINA Android Patched Module
-// Clean, dependency-free Java library compatible with Android
+plugins {
+    id 'com.android.library'
+    // remove 'java-library' — not compatible with Android
+}
 
-apply plugin: 'java-library'
+android {
+    namespace "org.apache.mina"
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    compileSdk 34
 
-    withJavadocJar()
-    withSourcesJar()
+    defaultConfig {
+        minSdk 24
+        targetSdk 34
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
 }
 
 dependencies {
-    // No external dependencies.
-    // This module contains a minimal patched version of MINA 
-    // (NioSocketAcceptor, IoSession, IoHandler) so Android can run it.
+    // Optional logging
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+    implementation 'org.slf4j:slf4j-simple:2.0.9'
 }
 
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-    options.release = 17   // Ensures consistent Java 17 bytecode
-}
-
-tasks.withType(Jar) {
+// Optional: Exclude duplicate classes in jar tasks
+tasks.withType(com.android.build.gradle.tasks.AndroidJar) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    archiveBaseName.set("mina-android-patched")
-    archiveVersion.set("1.0.0")
-
-    // Recommended for reproducible JARs
-    preserveFileTimestamps = false
-    reproducibleFileOrder = true
 }
