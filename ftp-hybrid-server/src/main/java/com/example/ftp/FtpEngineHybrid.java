@@ -3,7 +3,7 @@ package com.example.ftp;
 import android.content.Context;
 import com.example.ftpengine.FtpCommandProcessor;
 import com.example.ftpengine.FtpUserManager;
-import com.example.ftpengine.filesystem.saf.SAFFileSystem;
+import com.example.ftpengine.saf.SAFFileSystem; // ✅ fixed import
 import org.apache.mina.core.service.NioSocketAcceptor;
 import java.net.InetSocketAddress;
 
@@ -17,7 +17,8 @@ public class FtpEngineHybrid {
 
     public FtpEngineHybrid(Context context, SAFFileSystem safFs) {
         this.processor = new FtpCommandProcessor(safFs, new FtpUserManager());
-        this.acceptor = new NioSocketAcceptor(new FtpIoHandlerAndroid(processor));
+        this.acceptor = new NioSocketAcceptor();
+        this.acceptor.setHandler(new FtpIoHandlerAndroid(processor));
     }
 
     public void start(int port) throws Exception {
@@ -26,7 +27,8 @@ public class FtpEngineHybrid {
     }
 
     public void stop() {
-        if (acceptor != null) acceptor.shutdown();
+        if (acceptor != null) acceptor.unbind();
+        acceptor.dispose();
         System.out.println("FTP Hybrid Server stopped");
     }
 
