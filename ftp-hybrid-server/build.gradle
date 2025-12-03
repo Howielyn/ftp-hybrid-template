@@ -1,13 +1,16 @@
-apply plugin: 'com.android.library'
+plugins {
+    id 'com.android.library'
+    id 'java-library'
+}
 
 android {
     namespace "com.example.ftp"
 
-    compileSdkVersion 34
+    compileSdk 34
 
     defaultConfig {
-        minSdkVersion 24
-        targetSdkVersion 34
+        minSdk 24
+        targetSdk 34
     }
 
     compileOptions {
@@ -15,13 +18,30 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    // If using Kotlin in this module:
+    // Uncomment if using Kotlin in this module
     // kotlinOptions {
     //     jvmTarget = "17"
     // }
 }
 
 dependencies {
+    // Core FTP engine (must be an Android library if using Context, Uri, DocumentsContract)
     implementation project(":ftp-engine-core")
+
+    // Patched Apache MINA for Android (make sure this module exists)
     implementation project(":mina-android-patched")
+
+    // Optional: standard MINA Core (if you ever want non-Android version)
+    // implementation 'org.apache.mina:mina-core:2.2.1'
+
+    // Optional: Logging
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+    implementation 'org.slf4j:slf4j-simple:2.0.9'
+}
+
+// Optional: To generate JavaDoc or jar tasks for library consumers
+afterEvaluate {
+    tasks.withType(Jar) {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
 }
