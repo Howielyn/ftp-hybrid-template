@@ -1,4 +1,4 @@
-// Root-level build.gradle
+// Root-level build.gradle (fixed for AGP, JDK17, GitHub Actions)
 
 buildscript {
     repositories {
@@ -6,9 +6,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // Android Gradle Plugin should be defined in the environment or settings.gradle
-        // For example, you can add:
-        // classpath "com.android.tools.build:gradle:8.1.0"
+        // Required for Android modules
+        classpath "com.android.tools.build:gradle:8.5.0"
     }
 }
 
