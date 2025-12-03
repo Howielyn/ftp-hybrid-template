@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace "com.example.mina"
+    namespace "org.apache.mina.core"
     compileSdk 34
 
     defaultConfig {
