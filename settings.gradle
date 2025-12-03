@@ -1,21 +1,19 @@
-// Root-level settings.gradle
+// Root project settings for ftp-hybrid-template (including sample-app)
 
 rootProject.name = "ftp-hybrid-template"
 
-// Recommended for Gradle 8+ projects
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
-
-// ---------------------------------------------------------------------
-// Module Includes
-// ---------------------------------------------------------------------
 include(":mina-android-patched")
 include(":ftp-engine-core")
 include(":ftp-hybrid-server")
 include(":sample-app")
 
-// ---------------------------------------------------------------------
-// Plugin Management (AGP 8+ requires plugin versions here)
-// ---------------------------------------------------------------------
+// Optional: define module directories if they are outside default structure
+// project(":mina-android-patched").projectDir = file("mina-android-patched")
+// project(":ftp-engine-core").projectDir = file("ftp-engine-core")
+// project(":ftp-hybrid-server").projectDir = file("ftp-hybrid-server")
+// project(":sample-app").projectDir = file("sample-app")
+
+// Plugin management for AGP 8+
 pluginManagement {
     repositories {
         google()
@@ -26,13 +24,11 @@ pluginManagement {
     plugins {
         id("com.android.application") version "8.5.0"
         id("com.android.library") version "8.5.0"
-        id("org.jetbrains.kotlin.android") version "1.9.22" apply false  // optional
+        // Kotlin plugin optional
+        id("org.jetbrains.kotlin.android") version "1.9.22" apply false
     }
 }
 
-// ---------------------------------------------------------------------
-// Dependency Repositories
-// ---------------------------------------------------------------------
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
