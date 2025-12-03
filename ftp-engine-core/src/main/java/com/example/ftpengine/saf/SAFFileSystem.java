@@ -2,7 +2,7 @@ package com.example.ftpengine.filesystem.saf;
 
 import android.content.Context;
 import android.net.Uri;
-import com.example.ftpengine.filesystem.FtpFileSystem;
+import com.example.ftpengine.FtpFileSystem;
 
 import java.io.File;
 import java.io.IOException;
