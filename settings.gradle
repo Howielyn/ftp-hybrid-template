@@ -2,14 +2,46 @@
 
 rootProject.name = "ftp-hybrid-template"
 
-// Include all modules
-include ":mina-android-patched"
-include ":ftp-engine-core"       // Replaced swiftp-core with Apache 2.0 core
-include ":ftp-hybrid-server"
-include ":sample-app"
+// Enable Gradle 8+ feature preview (optional but recommended)
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
-// Optional: if module directories are outside default locations
-// project(":mina-android-patched").projectDir = new File("../mina-android-patched")
-// project(":ftp-engine-core").projectDir = new File("../ftp-engine-core")
-// project(":ftp-hybrid-server").projectDir = new File("../ftp-hybrid-server")
-// project(":sample-app").projectDir = new File("../sample-app")
+// ---------------------------------------------------------------------
+// Module Includes
+// ---------------------------------------------------------------------
+
+include(":mina-android-patched")
+include(":ftp-engine-core")      // Replaces swiftp-core with Apache 2.0 version
+include(":ftp-hybrid-server")
+include(":sample-app")
+
+// ---------------------------------------------------------------------
+// Explicit project directory mapping (optional but recommended)
+//
+// Use this only if your folder names differ or the repo is nested.
+// Otherwise, Gradle auto-detects them correctly.
+// ---------------------------------------------------------------------
+
+// project(":mina-android-patched").projectDir = file("mina-android-patched")
+// project(":ftp-engine-core").projectDir = file("ftp-engine-core")
+// project(":ftp-hybrid-server").projectDir = file("ftp-hybrid-server")
+// project(":sample-app").projectDir = file("sample-app")
+
+// ---------------------------------------------------------------------
+// Default repositories for plugin resolution (required for AGP 8)
+// ---------------------------------------------------------------------
+
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
