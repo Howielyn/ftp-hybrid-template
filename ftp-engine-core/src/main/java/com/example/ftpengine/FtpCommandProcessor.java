@@ -20,7 +20,12 @@ public class FtpCommandProcessor {
     }
 
     private void reply(IoSession session, String msg) {
-        session.write((msg + "\r\n").getBytes());
+        try {
+            session.write((msg + "\r\n").getBytes());
+        } catch (Exception e) {
+            // Close session on write failure
+            try { session.close(); } catch (Exception ignored) {}
+        }
     }
 
     public void handle(IoSession session, FtpSessionContext ctx, String line) {
