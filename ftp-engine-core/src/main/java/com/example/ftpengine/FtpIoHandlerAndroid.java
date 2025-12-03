@@ -3,10 +3,6 @@ package com.example.ftpengine;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IoSession;
 
-/**
- * Minimal IoHandler implementation to connect TCP input/output
- * to the FTP command processor.
- */
 public class FtpIoHandlerAndroid implements IoHandler {
 
     private final FtpCommandProcessor processor;
@@ -28,17 +24,13 @@ public class FtpIoHandlerAndroid implements IoHandler {
     @Override
     public void messageReceived(IoSession session, Object message) {
         if (!(message instanceof String)) return;
-
         String line = ((String) message).trim();
         FtpSessionContext ctx = (FtpSessionContext) session.getAttribute("ftpCtx");
-
         processor.handle(session, ctx, line);
     }
 
     @Override
-    public void messageSent(IoSession session, Object message) {
-        // no-op
-    }
+    public void messageSent(IoSession session, Object message) {}
 
     @Override
     public void exceptionCaught(IoSession session, Throwable cause) {
