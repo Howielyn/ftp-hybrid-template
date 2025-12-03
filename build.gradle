@@ -1,15 +1,7 @@
-// Root-level build.gradle (fixed for AGP, JDK17, GitHub Actions)
+// Root-level build.gradle
 
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        // Required for Android modules
-        classpath "com.android.tools.build:gradle:8.5.0"
-    }
-}
+// AGP 8+ prefers pluginManagement in settings.gradle
+// So this file stays minimal and clean.
 
 allprojects {
     repositories {
