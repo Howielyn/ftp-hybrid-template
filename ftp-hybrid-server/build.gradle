@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 
 android {
-    namespace "com.example.ftphybridserver"   // ✅ REQUIRED BY AGP 8+
+    namespace "com.example.ftp"
 
     compileSdkVersion 34
 
