@@ -1,11 +1,9 @@
 plugins {
     id 'com.android.library'
-    // remove 'java-library' — not compatible with Android
 }
 
 android {
-    namespace "org.apache.mina"
-
+    namespace "com.example.mina"
     compileSdk 34
 
     defaultConfig {
@@ -20,12 +18,7 @@ android {
 }
 
 dependencies {
-    // Optional logging
-    implementation 'org.slf4j:slf4j-api:2.0.9'
-    implementation 'org.slf4j:slf4j-simple:2.0.9'
-}
-
-// Optional: Exclude duplicate classes in jar tasks
-tasks.withType(com.android.build.gradle.tasks.AndroidJar) {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    // Only standard dependencies MINA needs
+    implementation 'org.apache.mina:mina-core:2.2.1' // core MINA
+    implementation 'org.apache.mina:mina-ftpserver:1.1.1' // FTP server part
 }
