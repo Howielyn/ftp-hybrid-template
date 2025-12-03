@@ -32,10 +32,10 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build sample-app Debug APK
-        run: ./gradlew :app:clean :app:assembleDebug
+        run: ./gradlew :sample-app:clean :sample-app:assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v3
         with:
           name: sample-app-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: sample-app/build/outputs/apk/debug/sample-app-debug.apk
