@@ -174,4 +174,39 @@ public class FtpCommandProcessor {
         }
 
         byte[] fileData = fs.readFile(ctx.cwd + "/" + filename);
-        data
+        data.getOutputStream().write(fileData);
+        data.close();
+
+        reply(session, "226 Transfer complete");
+    }
+
+    private void handleStor(IoSession session, FtpSessionContext ctx, String filename) throws Exception {
+        if (filename == null) {
+            reply(session, "501 Missing filename");
+            return;
+        }
+
+        reply(session, "150 Opening data connection for STOR");
+
+        Socket data = openDataConnection(ctx);
+        if (data == null) {
+            reply(session, "425 Can't open data connection");
+            return;
+        }
+
+        byte[] buffer = data.getInputStream().readAllBytes();
+        fs.writeFile(ctx.cwd + "/" + filename, buffer);
+        data.close();
+
+        reply(session, "226 Transfer complete");
+    }
+
+    private Socket openDataConnection(FtpSessionContext ctx) {
+        try {
+            if (ctx.activeDataSocket != null) return ctx.activeDataSocket;
+            if (ctx.passiveDataSocket != null) return ctx.passiveDataSocket;
+            if (ctx.dataHost != null) return new Socket(ctx.dataHost, ctx.dataPort);
+        } catch (Exception ignored) {}
+        return null;
+    }
+}
