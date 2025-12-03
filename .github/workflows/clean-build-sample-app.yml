@@ -35,6 +35,6 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Clean build sample-app only (No Cache)
-        run: ./gradlew :app:clean :app:build --no-build-cache --stacktrace ${{ github.event.inputs['gradle-args'] }}
+        run: ./gradlew :sample-app:clean :sample-app:build --no-build-cache --stacktrace ${{ github.event.inputs['gradle-args'] }}
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.java-home || env.JAVA_HOME }}
