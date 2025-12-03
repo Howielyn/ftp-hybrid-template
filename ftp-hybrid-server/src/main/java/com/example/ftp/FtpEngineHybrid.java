@@ -1,4 +1,4 @@
-package com.example.ftphybrid;
+package com.example.ftp;
 
 import android.content.Context;
 import com.example.ftpengine.FtpCommandProcessor;
