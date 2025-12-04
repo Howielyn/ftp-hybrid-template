@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace "org.apache.mina"
+    namespace "org.apache.mina.android"   // IMPORTANT: avoid namespace collisions
     compileSdk 34
 
     defaultConfig {
@@ -18,6 +18,8 @@ android {
 }
 
 dependencies {
-    // Only core MINA, we are including FTP server code manually
-    implementation 'org.apache.mina:mina-core:2.2.1'
+    // ❌ REMOVE THIS — Causes duplicate IoHandler
+    // implementation 'org.apache.mina:mina-core:2.2.1'
+
+    // No external MINA allowed. All classes must come from the patched sources.
 }
