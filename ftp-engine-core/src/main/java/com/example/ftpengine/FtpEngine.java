@@ -29,8 +29,7 @@ public class FtpEngine {
 
     public void stop() {
         if (acceptor != null) {
-            acceptor.unbind();   // stop accepting new connections
-            acceptor.dispose();  // release resources
+            acceptor.shutdown();   // ✅ stop server
         }
         System.out.println("FtpEngine stopped");
     }
