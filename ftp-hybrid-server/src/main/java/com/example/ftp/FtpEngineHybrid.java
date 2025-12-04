@@ -44,8 +44,7 @@ public class FtpEngineHybrid {
      */
     public void stop() {
         if (acceptor != null) {
-            acceptor.unbind();   // stop accepting new connections
-            acceptor.dispose();  // release resources
+            acceptor.shutdown();   // ✅ replaces unbind() + dispose()
         }
         System.out.println("FTP Hybrid Server stopped");
     }
