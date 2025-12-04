@@ -5,10 +5,8 @@ import org.apache.mina.core.session.IoSession;
 /**
  * Minimal Android-compatible IoHandler interface.
  *
- * This is a clean-room design that mirrors the behavior of the original MINA
- * conceptually but contains no copied logic or internal design.
- *
- * The FTP Engine will use this interface to receive network events.
+ * This mirrors the conceptual event callbacks of Apache MINA but is written
+ * exclusively for your Android FTP Engine.
  *
  * License: Apache License 2.0
  */
@@ -22,14 +20,14 @@ public interface IoHandler {
     void sessionCreated(IoSession session);
 
     /**
-     * Called when a session has been opened (socket connected).
+     * Called when a session has been opened (client connected).
      *
      * @param session The opened session.
      */
     void sessionOpened(IoSession session);
 
     /**
-     * Called when new data has arrived from the client.
+     * Called when data has arrived from the remote client.
      *
      * @param session The session that received the data.
      * @param message The decoded message or raw buffer.
@@ -37,23 +35,23 @@ public interface IoHandler {
     void messageReceived(IoSession session, Object message);
 
     /**
-     * Called when the handler is expected to send data out through the session.
+     * Called after data has been sent to the remote client.
      *
      * @param session The session to send data to.
-     * @param message The message to send.
+     * @param message The message that was sent.
      */
     void messageSent(IoSession session, Object message);
 
     /**
-     * Called when an exception occurs on the connection.
+     * Called when an exception occurs inside the network pipeline.
      *
      * @param session The affected session.
-     * @param cause The exception thrown.
+     * @param cause   The thrown exception.
      */
     void exceptionCaught(IoSession session, Throwable cause);
 
     /**
-     * Called when the session is being closed.
+     * Called when the session is closing or has closed.
      *
      * @param session The session being closed.
      */
