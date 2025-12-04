@@ -11,9 +11,9 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.ftpengine.filesystem.saf.SAFFileSystem;
-import com.example.ftphybrid.FtpEngineHybrid;
-import com.example.ftphybrid.AndroidUtils;
+import com.example.ftpengine.saf.SAFFileSystem;
+import com.example.ftp.FtpEngineHybrid;
+import com.example.ftp.AndroidUtils;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -29,14 +29,14 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         TextView txtLog = findViewById(R.id.txtLog);
-        ScrollView scrollView = findViewById(R.id.scrollView); // Optional if you wrap TextView in ScrollView
+        ScrollView scrollView = findViewById(R.id.scrollView); 
         logger = new LogUtils(txtLog, scrollView);
 
         Button btnChooseFolder = findViewById(R.id.btnChooseFolder);
         Button btnStart = findViewById(R.id.btnStartServer);
         Button btnStop = findViewById(R.id.btnStopServer);
 
-        // Modern SAF folder picker
+        // SAF folder picker launcher
         folderPickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -66,10 +66,27 @@ public class MainActivity extends AppCompatActivity {
 
             ftpEngine = new FtpEngineHybrid(this, safFs);
 
-            // Start FTP in background thread
             new Thread(() -> {
                 try {
                     ftpEngine.start(2121);
                     runOnUiThread(() -> logger.log("FTP Server started on port 2121"));
                 } catch (Exception e) {
-                    runOnUiThread(() -> logger.log("
+                    runOnUiThread(() -> logger.log("Failed to start FTP Server: " + e.getMessage()));
+                    e.printStackTrace();
+                }
+            }).start();
+        });
+
+        btnStop.setOnClickListener(v -> {
+            if (ftpEngine != null) {
+                new Thread(() -> {
+                    ftpEngine.stop();
+                    runOnUiThread(() -> logger.log("FTP Server stopped"));
+                    ftpEngine = null;
+                }).start();
+            } else {
+                Toast.makeText(this, "FTP Server is not running", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+}
