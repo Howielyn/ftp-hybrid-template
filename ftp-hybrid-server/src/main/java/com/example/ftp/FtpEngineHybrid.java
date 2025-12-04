@@ -7,7 +7,7 @@ import com.example.ftpengine.FtpUserManager;
 import com.example.ftpengine.saf.SAFFileSystem;
 
 import org.apache.mina.core.service.IoHandler;
-import org.apache.mina.core.service.AndroidNioSocketAcceptor; // use patched acceptor
+import org.apache.mina.core.service.AndroidNioSocketAcceptor;
 
 import java.net.InetSocketAddress;
 
@@ -44,7 +44,8 @@ public class FtpEngineHybrid {
      */
     public void stop() {
         if (acceptor != null) {
-            acceptor.shutdown();
+            acceptor.unbind();   // stop accepting new connections
+            acceptor.dispose();  // release resources
         }
         System.out.println("FTP Hybrid Server stopped");
     }
