@@ -6,7 +6,7 @@ import org.apache.mina.core.service.AndroidNioSocketAcceptor;
 import java.net.InetSocketAddress;
 
 /**
- * FTP engine using the clean-room NIO acceptor implementation.
+ * FTP engine using the Android-compatible NIO acceptor.
  */
 public class FtpEngine {
 
@@ -18,8 +18,8 @@ public class FtpEngine {
 
         IoHandler handler = new FtpIoHandlerAndroid(processor);
 
-        // Your custom acceptor requires IoHandler in constructor
-        this.acceptor = new NioSocketAcceptor(handler);
+        // Instantiate the AndroidNioSocketAcceptor with IoHandler
+        this.acceptor = new AndroidNioSocketAcceptor(handler);
     }
 
     public void start(int port) throws Exception {
@@ -29,8 +29,8 @@ public class FtpEngine {
 
     public void stop() {
         if (acceptor != null) {
-            acceptor.unbind();   // your custom method
-            acceptor.dispose();  // your custom method
+            acceptor.unbind();   // stop accepting new connections
+            acceptor.dispose();  // release resources
         }
         System.out.println("FtpEngine stopped");
     }
