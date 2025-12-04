@@ -12,23 +12,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Minimal Android-compatible clean-room NIO socket acceptor.
- *
- * This class completely replaces Apache MINA's NioSocketAcceptor for Android.
- * It manages:
- *   - TCP listening
- *   - Non-blocking accept
- *   - Non-blocking read
- *   - IoSession lifecycle
- *   - IoHandler callback events
- *
- * License: Apache License 2.0
  */
 public class AndroidNioSocketAcceptor implements Runnable {
 
     private final IoHandler handler;
 
     private final AtomicLong sessionIdGen = new AtomicLong(0);
-
     private volatile boolean running = false;
 
     private Selector selector;
@@ -36,13 +25,9 @@ public class AndroidNioSocketAcceptor implements Runnable {
 
     private Thread loopThread;
 
-    public NioSocketAcceptor(IoHandler handler) {
+    public AndroidNioSocketAcceptor(IoHandler handler) {
         this.handler = handler;
     }
-
-    // ------------------------------------------------------------
-    // BIND + START LOOP
-    // ------------------------------------------------------------
 
     /**
      * Begin listening for incoming TCP connections.
@@ -65,28 +50,11 @@ public class AndroidNioSocketAcceptor implements Runnable {
         System.out.println("[Acceptor] Listening on " + address);
     }
 
-    // ------------------------------------------------------------
-    // STOP SERVER
-    // ------------------------------------------------------------
-
-    /**
-     * Unbind the listening socket (MINA-style).
-     */
-    public synchronized void unbind() {
+    /** Stop accepting new connections. */
+    public synchronized void shutdown() {
         running = false;
         if (selector != null) selector.wakeup();
     }
-
-    /**
-     * Fully shutdown and close all resources (MINA-style).
-     */
-    public synchronized void dispose() {
-        unbind();
-    }
-
-    // ------------------------------------------------------------
-    // MAIN LOOP
-    // ------------------------------------------------------------
 
     @Override
     public void run() {
@@ -121,10 +89,6 @@ public class AndroidNioSocketAcceptor implements Runnable {
         }
     }
 
-    // ------------------------------------------------------------
-    // ACCEPT
-    // ------------------------------------------------------------
-
     private void handleAccept() {
         try {
             SocketChannel client = serverChannel.accept();
@@ -147,10 +111,6 @@ public class AndroidNioSocketAcceptor implements Runnable {
             System.err.println("[Acceptor] Failed to accept client: " + e);
         }
     }
-
-    // ------------------------------------------------------------
-    // READ
-    // ------------------------------------------------------------
 
     private void handleRead(SelectionKey key) {
         IoSession session = (IoSession) key.attachment();
@@ -178,10 +138,6 @@ public class AndroidNioSocketAcceptor implements Runnable {
         }
     }
 
-    // ------------------------------------------------------------
-    // CLOSE SESSION
-    // ------------------------------------------------------------
-
     private void closeSession(IoSession session) {
         try {
             handler.sessionClosed(session);
@@ -189,10 +145,6 @@ public class AndroidNioSocketAcceptor implements Runnable {
 
         session.close();
     }
-
-    // ------------------------------------------------------------
-    // FINAL CLEANUP
-    // ------------------------------------------------------------
 
     private void cleanup() {
         try {
