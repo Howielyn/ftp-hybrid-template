@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * License: Apache License 2.0
  */
-public class NioSocketAcceptor implements Runnable {
+public class AndroidNioSocketAcceptor implements Runnable {
 
     private final IoHandler handler;
 
