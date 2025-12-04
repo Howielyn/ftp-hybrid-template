@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -12,12 +13,15 @@ import java.util.concurrent.ConcurrentHashMap;
  * Represents a single TCP client connection and provides basic
  * read/write operations using Java NIO.
  *
+ * This class intentionally does NOT depend on Apache MINA internals.
+ *
  * License: Apache License 2.0
  */
 public class IoSession {
 
     private final long id;
     private final SocketChannel channel;
+
     private final ConcurrentHashMap<String, Object> attributes =
             new ConcurrentHashMap<>();
 
@@ -48,9 +52,28 @@ public class IoSession {
         open = false;
         try {
             channel.close();
-        } catch (IOException e) {
-            // ignore; closed anyway
+        } catch (IOException ignored) {}
+    }
+
+    // ------------------------------------------------------------
+    // WRITE METHODS
+    // ------------------------------------------------------------
+
+    /**
+     * Write a String or byte[] as required by IoHandler API.
+     */
+    public int write(Object message) throws IOException {
+        if (message == null) return -1;
+
+        if (message instanceof byte[]) {
+            return write((byte[]) message);
         }
+
+        if (message instanceof String) {
+            return write(((String) message).getBytes(StandardCharsets.UTF_8));
+        }
+
+        throw new IOException("Unsupported message type: " + message.getClass());
     }
 
     /**
@@ -61,12 +84,18 @@ public class IoSession {
      */
     public int write(byte[] data) throws IOException {
         if (!isOpen()) return -1;
+        if (data == null || data.length == 0) return 0;
+
         ByteBuffer buf = ByteBuffer.wrap(data);
         return channel.write(buf);
     }
 
+    // ------------------------------------------------------------
+    // READ
+    // ------------------------------------------------------------
+
     /**
-     * Read up to len bytes into buffer.
+     * Read raw bytes into a buffer.
      */
     public int read(byte[] buffer) throws IOException {
         if (!isOpen()) return -1;
@@ -74,9 +103,10 @@ public class IoSession {
         return channel.read(buf);
     }
 
-    /**
-     * Session attribute helpers.
-     */
+    // ------------------------------------------------------------
+    // ATTRIBUTES
+    // ------------------------------------------------------------
+
     public void setAttribute(String key, Object value) {
         attributes.put(key, value);
     }
