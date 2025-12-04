@@ -1,7 +1,7 @@
 package com.example.ftpengine;
 
 import org.apache.mina.core.service.IoHandler;
-import org.apache.mina.core.service.NioSocketAcceptor;
+import org.apache.mina.core.service.AndroidNioSocketAcceptor;
 
 import java.net.InetSocketAddress;
 
@@ -10,7 +10,7 @@ import java.net.InetSocketAddress;
  */
 public class FtpEngine {
 
-    private final NioSocketAcceptor acceptor;
+    private final AndroidNioSocketAcceptor acceptor;
     private final FtpCommandProcessor processor;
 
     public FtpEngine(IFtpFileSystem fs) {
