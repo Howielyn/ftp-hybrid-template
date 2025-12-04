@@ -1,10 +1,9 @@
 plugins {
-    id 'com.android.library' // Only the Android library plugin
+    id 'com.android.library'
 }
 
 android {
     namespace "com.example.ftp"
-
     compileSdk 34
 
     defaultConfig {
@@ -19,6 +18,12 @@ android {
 }
 
 dependencies {
+    // Core file system + command processor
     implementation project(":ftp-engine-core")
-    implementation project(":mina-android-patched") // Android-patched MINA module
+
+    // Android-compatible MINA transport layer
+    implementation project(":mina-android-patched")
+
+    // REQUIRED when using service, handlers, logs, etc.
+    implementation 'androidx.annotation:annotation:1.8.0'
 }
