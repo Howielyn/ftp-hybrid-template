@@ -19,13 +19,21 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    // Uncomment if using Kotlin:
-    // kotlinOptions {
-    //     jvmTarget = "17"
-    // }
+    // If you add Kotlin later, uncomment:
+    // kotlinOptions { jvmTarget = "17" }
 }
 
 dependencies {
+    // Your modules
     implementation(project(":ftp-engine-core"))
     implementation(project(":ftp-hybrid-server"))
+
+    // REQUIRED — fixes missing theme error
+    implementation("androidx.appcompat:appcompat:1.6.1")
+
+    // OPTIONAL but recommended for Material components
+    implementation("com.google.android.material:material:1.11.0")
+
+    // OPTIONAL — If you use ScrollView + modern widgets
+    implementation("androidx.core:core-ktx:1.13.1")
 }
