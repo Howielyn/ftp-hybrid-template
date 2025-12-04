@@ -1,4 +1,3 @@
-// ftp-engine-core/build.gradle
 plugins {
     id 'com.android.library'
 }
@@ -16,13 +15,12 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-
-    // If using Kotlin:
-    // kotlinOptions {
-    //     jvmTarget = "17"
-    // }
 }
 
 dependencies {
+    // Android-compatible MINA transport layer (patched)
     implementation project(":mina-android-patched")
+
+    // Optional: Annotations for clean code
+    implementation 'androidx.annotation:annotation:1.8.0'
 }
