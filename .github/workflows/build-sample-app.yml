@@ -35,7 +35,7 @@ jobs:
         run: ./gradlew :sample-app:clean :sample-app:assembleDebug
 
       - name: Upload APK Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4   # ✅ updated from v3 to v4
         with:
           name: sample-app-debug-apk
           path: sample-app/build/outputs/apk/debug/sample-app-debug.apk
