@@ -1,6 +1,7 @@
 package com.example.ftp;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.example.ftpengine.FtpCommandProcessor;
 import com.example.ftpengine.FtpUserManager;
@@ -9,24 +10,24 @@ import com.example.ftpengine.saf.SAFFileSystem;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.AndroidNioSocketAcceptor;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.util.Enumeration;
 
 /**
  * FTP Engine using Android-patched NIO acceptor + SAF filesystem.
- *
- * This class manages the FTP server lifecycle and delegates FTP commands
- * to FtpCommandProcessor.
  */
 public class FtpEngineHybrid {
+
+    private static final String TAG = "FtpEngineHybrid";
 
     private final AndroidNioSocketAcceptor acceptor;
     private final FtpCommandProcessor processor;
 
     public FtpEngineHybrid(Context context, SAFFileSystem safFs) {
-        // Initialize the FTP command processor with SAF filesystem
         this.processor = new FtpCommandProcessor(safFs, new FtpUserManager());
 
-        // Create the Android-compatible NIO acceptor
         IoHandler handler = new FtpIoHandlerAndroid(processor);
         this.acceptor = new AndroidNioSocketAcceptor(handler);
     }
@@ -35,8 +36,23 @@ public class FtpEngineHybrid {
      * Start the FTP server on the specified port.
      */
     public void start(int port) throws Exception {
-        acceptor.bind(new InetSocketAddress(port));
-        System.out.println("FTP Hybrid Server started on port " + port);
+        // Bind to all interfaces (0.0.0.0) instead of just localhost
+        acceptor.bind(new InetSocketAddress(InetAddress.getByName("0.0.0.0"), port));
+
+        // Log all device IPs for clients to connect
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        while (interfaces.hasMoreElements()) {
+            NetworkInterface ni = interfaces.nextElement();
+            Enumeration<InetAddress> addresses = ni.getInetAddresses();
+            while (addresses.hasMoreElements()) {
+                InetAddress addr = addresses.nextElement();
+                if (!addr.isLoopbackAddress() && addr.getHostAddress().contains(".")) {
+                    Log.i(TAG, "FTP server reachable at: " + addr.getHostAddress() + ":" + port);
+                }
+            }
+        }
+
+        Log.i(TAG, "FTP Hybrid Server started on port " + port);
     }
 
     /**
@@ -44,9 +60,9 @@ public class FtpEngineHybrid {
      */
     public void stop() {
         if (acceptor != null) {
-            acceptor.shutdown();   // ✅ replaces unbind() + dispose()
+            acceptor.shutdown();
+            Log.i(TAG, "FTP Hybrid Server stopped");
         }
-        System.out.println("FTP Hybrid Server stopped");
     }
 
     /**
