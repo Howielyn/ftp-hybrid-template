@@ -1,0 +1,43 @@
+name: Build Libraries as JARs
+
+on:
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  build-jars:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Grant execute permission for Gradle wrapper
+        run: chmod +x ./gradlew
+
+      - name: Clean all library modules
+        run: ./gradlew :ftp-engine-core:clean :ftp-hybrid-server:clean :mina-android-patched:clean
+
+      - name: Build all library modules (release)
+        run: ./gradlew :ftp-engine-core:assembleRelease :ftp-hybrid-server:assembleRelease :mina-android-patched:assembleRelease
+
+      - name: Extract JARs from AARs
+        run: |
+          mkdir -p build/artifacts
+          for module in ftp-engine-core ftp-hybrid-server mina-android-patched; do
+            aar_path="$module/build/outputs/aar/$module-release.aar"
+            jar_path="build/artifacts/$module.jar"
+            unzip -p "$aar_path" classes.jar > "$jar_path"
+            echo "Created JAR: $jar_path"
+          done
+
+      - name: Upload JAR Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-library-jars
+          path: build/artifacts/
